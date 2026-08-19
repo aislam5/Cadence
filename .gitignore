@@ -1,0 +1,8 @@
+venv/
+backend/.env
+backend/__pycache__/
+backend/credentials.json
+backend/token.json
+frontend/node_modules/
+frontend/.env
+backend/credentials - web app.json
