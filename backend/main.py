@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from auth import getCredentials
 from calendarClient import getEvents, get_free_busy_blocks
 from datetime import datetime, timezone, timedelta
+from schemas import IntakeRequest
+from agents.intake_agent import parse_goals
 
 app = FastAPI()
 
@@ -33,3 +35,9 @@ def get_week():
       "events": events,  
       "free_blocks" :free_blocks
     }
+
+@app.post("/agents/intake")
+def handle_post(request: IntakeRequest):
+    goals = request.raw_text
+    taskList = parse_goals(goals)
+    return taskList
