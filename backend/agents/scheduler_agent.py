@@ -1,14 +1,16 @@
-from schemas import ScheduledTask, ScheduleResult, TaskList
+from schemas import ScheduleResult, TaskList
 from google import genai
 import os 
 from dotenv import load_dotenv
 from datetime import datetime
-from calendarClient import get_free_busy_blocks
+from calendarClient import get_week_free_blocks
+import json
+from zoneinfo import ZoneInfo
 
 load_dotenv()
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
-PROMPT_TEMPLATE = f"Today's date is {datetime.now().strftime('%Y-%m-%d')}.""""You are a scheduling assistant. Given a list of tasks and a list of available free time blocks, assign each task to a specific start and end time.
+PROMPT_TEMPLATE = "Today's date is {today}" """You are a scheduling assistant. Given a list of tasks and a list of available free time blocks, assign each task to a specific start and end time.
 
 Rules:
 - Every task must fit entirely within a single free time block — never overlapping a busy period.
@@ -31,12 +33,24 @@ Respond with ONLY valid JSON in this exact shape, no markdown formatting, no exp
 
 
 def propose_schedule(tasks: TaskList, free_blocks: list) -> ScheduleResult:
-
+    prompt = PROMPT_TEMPLATE.format(
+                today= datetime.now(tz=ZoneInfo("America/New_York")).strftime('%Y-%m-%d'),
+                tasks_json= tasks.model_dump_json(), 
+                free_blocks_json=json.dumps(free_blocks, default=str))
+    
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=prompt
     )
 
     raw_output = response.text.strip()
+    try:
+        return ScheduleResult.model_validate_json(raw_output)
+    except Exception as first_error:
+        retry_prompt = prompt + f"\n\nYour previous response failed to parse as a valid JSON with this error: {first_error}. Respond again with ONLY valid JSON, not markdown fences, no explanation."
+        retry_response = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=retry_prompt
+        )
+        return ScheduleResult.model_validate_json(retry_response.text.strip())
 
-    return

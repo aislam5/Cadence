@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, timedelta
 from googleapiclient.discovery import build
 from auth import getCredentials
+from zoneinfo import ZoneInfo
 
 def getEvents(startDate, endDate, creds):
     service = build("calendar", "v3", credentials=creds)
@@ -14,7 +15,6 @@ def getEvents(startDate, endDate, creds):
     eventsList = events.get("items", [])
 
     if not eventsList:
-        print("No upcoming events")
         return []
     return eventsList
 
@@ -32,17 +32,25 @@ def get_free_busy_blocks(events, start_date, end_date):
         gaps.append({"start": endPrevious, "end": end_date})
     return gaps
 
-creds = getCredentials()
-today = datetime.now(tz=timezone.utc)
-start_date = today.replace(hour=8, minute=0, second=0, microsecond=0)
-end_date = today + timedelta(days=7)
-end_date = end_date.replace(hour=22, minute=0, second=0, microsecond=0)
 
-events = getEvents(start_date, end_date, creds)
-print(f"Found {len(events)} events")
+def get_week_free_blocks(start_date, end_date, creds):
+    week_free_blocks = []
+    how_many_days = (end_date - start_date).days
+    for i in range(0, how_many_days+1):
+        next_days = start_date + timedelta(days=i)
+        new_start_day = next_days.replace(hour=8, minute=0, second=0, microsecond=0)
+        new__end_date = next_days.replace(hour=22, minute=0, second=0, microsecond=0)
+        events = getEvents(new_start_day, new__end_date, creds)
+        free_blocks = get_free_busy_blocks(events, new_start_day, new__end_date)
+        week_free_blocks.extend(free_blocks)
+    return week_free_blocks
 
-free_blocks = get_free_busy_blocks(events, start_date, end_date)
-for block in free_blocks:
-    print(block)
+if __name__ == "__main__":
+    creds = getCredentials()
+    today = datetime.now(tz=ZoneInfo("America/New_York"))
+    start_date = today.replace(hour=8, minute=0, second=0, microsecond=0)
+    end_date = (today + timedelta(days=7)).replace(hour=22, minute=0, second=0, microsecond=0)
 
-    
+    blocks = get_week_free_blocks(start_date, end_date, creds)
+    for block in blocks:
+        print(block)

@@ -4,12 +4,13 @@ import os
 from dotenv import load_dotenv
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 load_dotenv()
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 
-PROMPT_TEMPLATE = f"Today's date is {datetime.now().strftime('%Y-%m-%d')}.""""You are a task extraction assistant. Convert the user's free-text description of their goals and responsibilities into a structured JSON list of tasks.
+PROMPT_TEMPLATE = "Today's date is {today}.""""You are a task extraction assistant. Convert the user's free-text description of their goals and responsibilities into a structured JSON list of tasks.
 
 Each task must have exactly these fields:
 - title (string): short name for the task
@@ -30,7 +31,9 @@ Now convert this input:
 """
 
 def parse_goals(raw_text: str) -> TaskList:
-    prompt = PROMPT_TEMPLATE.format(raw_text=raw_text)
+    prompt = PROMPT_TEMPLATE.format(
+        today = datetime.now(tz=ZoneInfo("America/New_York")).strftime('%Y-%m-%d'),
+        raw_text=raw_text)
     response = client.models.generate_content(
         model="gemini-3.6-flash",
         contents=prompt
