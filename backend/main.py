@@ -7,6 +7,7 @@ from schemas import IntakeRequest
 from agents.intake_agent import parse_goals
 from zoneinfo import ZoneInfo
 from agents.scheduler_agent import propose_schedule
+from graph import build_graph
 
 app = FastAPI()
 
@@ -55,3 +56,10 @@ def handle_post(request: IntakeRequest):
     freeBlocks = get_week_free_blocks(start_date, end_date, creds)
     proposedSchedule = propose_schedule(tasks, freeBlocks)
     return proposedSchedule
+
+@app.post("/plan")
+def handle__post(request: IntakeRequest):
+    goals = request.raw_text
+    graph = build_graph()
+    result = graph.invoke({"raw_goals" : goals})
+    return result
