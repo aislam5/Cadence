@@ -2,7 +2,7 @@ import { useState } from 'react';
 import WeekGrid, { parseISOComponents, formatDayLabel } from './WeekGrid';
 import './App.css';
 
-const API_URL = 'http://127.0.0.1:8000/plan';
+const API_URL = 'cadence-production-75f6.up.railway.app';
 
 const CATEGORY_LABELS = {
   work: 'Work',
